@@ -11,10 +11,9 @@ import (
 func main() {
 	// prepare data pipelines
 	addpipe := make(chan *stix.Task)
-	retrypipe := make(chan string)
 	ctx := context.Background()
 
-	scheduler := stix.NewScheduler(addpipe, retrypipe)
+	scheduler := stix.NewScheduler(addpipe)
 	shutdown := scheduler.Start(ctx)
 
 	// submit task

@@ -22,12 +22,15 @@ type Scheduler struct {
 	retrypipe chan string
 }
 
-func NewScheduler(addpipe chan *Task, retrypipe chan string) *Scheduler {
-	return &Scheduler{
-		addpipe:   addpipe,
-		retrypipe: retrypipe,
-		tasks:     container.NewSyncMap[string, *Task](),
+func NewScheduler(addpipe chan *Task, opts ...SchedulerOption) *Scheduler {
+	s := &Scheduler{
+		addpipe: addpipe,
+		tasks:   container.NewSyncMap[string, *Task](),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // Start starts the Scheduler and returns Shutdown func
