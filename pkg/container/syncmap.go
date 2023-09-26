@@ -3,7 +3,7 @@ package container
 import "sync"
 
 type SyncMap[K comparable, V any] struct {
-	sync.RWMutex
+	mx   sync.RWMutex
 	data map[K]V
 }
 
@@ -14,20 +14,20 @@ func NewSyncMap[K comparable, V any]() *SyncMap[K, V] {
 }
 
 func (s *SyncMap[K, V]) Load(key K) (V, bool) {
-	s.RLock()
+	s.mx.RLock()
 	val, ok := s.data[key]
-	s.RUnlock()
+	s.mx.RUnlock()
 	return val, ok
 }
 
 func (s *SyncMap[K, V]) Store(key K, value V) {
-	s.Lock()
+	s.mx.Lock()
 	s.data[key] = value
-	s.Unlock()
+	s.mx.Unlock()
 }
 
 func (s *SyncMap[K, V]) Delete(key K) {
-	s.Lock()
+	s.mx.Lock()
 	delete(s.data, key)
-	s.Unlock()
+	s.mx.Unlock()
 }

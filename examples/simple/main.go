@@ -21,8 +21,8 @@ func main() {
 		ID:          "1",
 		Name:        "my-task",
 		Description: "print task",
-		Execute: func() error {
-			fmt.Println("HEllo world")
+		Execute: func(context.Context) error {
+			fmt.Println("Hello world")
 			return nil
 		},
 	}

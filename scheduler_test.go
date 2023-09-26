@@ -18,7 +18,7 @@ func TestScheduler(t *testing.T) {
 		ID:          "id-1",
 		Name:        "name-1",
 		Description: "desc-1",
-		Execute: func() error {
+		Execute: func(context.Context) error {
 			resultpipe <- "result"
 			return nil
 		},

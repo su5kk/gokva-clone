@@ -13,7 +13,7 @@ type Task struct {
 	Name        string
 	Description string
 	Timeout     time.Duration
-	Execute     func() error
+	Execute     func(ctx context.Context) error
 }
 
 type Scheduler struct {
@@ -76,7 +76,7 @@ func (s *Scheduler) iterLoop(ctx context.Context) {
 	}
 
 	for iter(ctx, func(task *Task) {
-		err := task.Execute()
+		err := task.Execute(ctx)
 		if err != nil {
 			log.Println("task execution failed")
 			return
