@@ -3,9 +3,24 @@ package main
 import (
 	"context"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 )
+
+func NewCoordinator(peerCount int) *Coordinator {
+	peers := make([]*Peer, 0, peerCount)
+	for i := 0; i < peerCount; i++ {
+		id := "peer-" + strconv.Itoa(i)
+		peers = append(peers, NewPeer(id))
+	}
+
+	return &Coordinator{
+		peers: peers,
+		log:   log.Default(),
+		ts:    &WriteTs{0},
+	}
+}
 
 type Coordinator struct {
 	peers []*Peer
@@ -22,6 +37,9 @@ func (c *Coordinator) Set(key Key, value Value) error {
 }
 
 func (c *Coordinator) set(key Key, value StampedValue) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
 	var wg sync.WaitGroup
 	wg.Add(len(c.peers))
 	acks := make(chan bool, 1)
@@ -29,7 +47,20 @@ func (c *Coordinator) set(key Key, value StampedValue) error {
 	for _, peer := range c.peers {
 		go func(peer *Peer) {
 			defer wg.Done()
-			acks <- peer.Write(key, value)
+
+			// Use a separate context with a timeout for each peer to ensure that
+			// if a peer hangs, it doesn't affect the operation for other peers.
+			peerCtx, peerCancel := context.WithTimeout(ctx, 5*time.Second)
+			defer peerCancel()
+
+			select {
+			case acks <- peer.Write(peerCtx, key, value):
+				// peer acknowledged write
+			case <-peerCtx.Done():
+				// peer timed out
+			case <-ctx.Done():
+				// acks are no longer required
+			}
 		}(peer)
 	}
 
@@ -37,9 +68,6 @@ func (c *Coordinator) set(key Key, value StampedValue) error {
 		wg.Wait()
 		close(acks)
 	}()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
 
 	err := c.awaitWrites(ctx, c.majority(), acks)
 	if err != nil {
@@ -120,13 +148,13 @@ func (c *Coordinator) awaitReads(
 		case <-ctx.Done():
 			c.log.Println("shutting down")
 			return values, ctx.Err()
-
 		case read, ok := <-reads:
 			if !ok {
 				return values, nil
 			}
-			values = append(values, read)
-
+			if read.stamp != nil {
+				values = append(values, read)
+			}
 		default:
 			if ctx.Err() != nil {
 				c.log.Printf("shutting down: %v", ctx.Err())

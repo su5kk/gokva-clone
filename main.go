@@ -23,22 +23,7 @@ type StampedValue struct {
 }
 
 func main() {
-	c := &Coordinator{
-		peers: []*Peer{
-			{
-				ID:      "peer-1",
-				storage: map[Key]StampedValue{},
-			},
-			{
-				ID:      "peer-2",
-				storage: map[Key]StampedValue{},
-			},
-			{
-				ID:      "peer-3",
-				storage: map[Key]StampedValue{},
-			},
-		},
-	}
+	c := NewCoordinator(3)
 	c.Set("a", "1")
 	fmt.Println(c.Get("a"))
 	for _, peer := range c.peers {
