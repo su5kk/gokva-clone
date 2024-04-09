@@ -1,6 +1,7 @@
-# Atomic register implementation in Go
+Stix is a scheduling framework.
 
-## Features
-1. Linearizability
-2. Quorum system
-3. Coordinator system
+# Get the package
+`go get github.com/su5kk/stix`
+
+# Usage
+See [examples](./examples/)
